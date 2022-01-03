@@ -23,44 +23,52 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 _dayjs.default.Ls.en.weekStart = 1;
 
 const main = file => {
+  const commissions = [];
   let userTransactionState = {};
-  JSON.parse(file).forEach(element => {
-    let fee = 0;
-    const {
-      freeLimit
-    } = _configs.cashInOutRules[element.type][element.user_type];
-    const userProp = element.user_id + element.type; //keeping track of weekly transactions
 
-    if (userTransactionState[userProp]) {
+  try {
+    JSON.parse(file).forEach(element => {
+      let fee = 0;
       const {
-        amount,
-        startDate
-      } = userTransactionState[userProp];
-      const isSameWeek = (0, _dayjs.default)(startDate).isSame(element.date, 'week');
-      userTransactionState = _objectSpread(_objectSpread({}, userTransactionState), {}, {
-        [userProp]: {
-          amount: isSameWeek ? element.operation.amount : element.operation.amount - freeLimit,
-          startDate: isSameWeek ? startDate : element.date
-        }
-      });
-    } else {
-      userTransactionState = _objectSpread(_objectSpread({}, userTransactionState), {}, {
-        [userProp]: {
-          amount: element.operation.amount - freeLimit,
-          startDate: element.date
-        }
-      });
-    } //calculate fees
+        freeLimit
+      } = _configs.cashInOutRules[element.type][element.user_type];
+      const userProp = element.user_id + element.type; //keeping track of weekly transactions
+
+      if (userTransactionState[userProp]) {
+        const {
+          startDate
+        } = userTransactionState[userProp];
+        const isSameWeek = (0, _dayjs.default)(startDate).isSame(element.date, 'week');
+        userTransactionState = _objectSpread(_objectSpread({}, userTransactionState), {}, {
+          [userProp]: {
+            amount: isSameWeek ? element.operation.amount : element.operation.amount - freeLimit,
+            startDate: isSameWeek ? startDate : element.date
+          }
+        });
+      } else {
+        userTransactionState = _objectSpread(_objectSpread({}, userTransactionState), {}, {
+          [userProp]: {
+            amount: element.operation.amount - freeLimit,
+            startDate: element.date
+          }
+        });
+      } //calculate fees
 
 
-    if (userTransactionState[userProp].amount > 0) {
-      fee = (0, _calculate.calculate)(userTransactionState[userProp].amount, _configs.cashInOutRules[element.type][element.user_type].feeRate, _configs.cashInOutRules[element.type][element.user_type].minFee || null, _configs.cashInOutRules[element.type][element.user_type].maxFee || null);
-    } else if (_configs.cashInOutRules[element.type][element.user_type].minFee > 0) {
-      fee = _configs.cashInOutRules[element.type][element.user_type].minFee;
-    }
+      if (userTransactionState[userProp].amount > 0) {
+        fee = (0, _calculate.calculate)(userTransactionState[userProp].amount, _configs.cashInOutRules[element.type][element.user_type].feeRate, _configs.cashInOutRules[element.type][element.user_type].minFee || null, _configs.cashInOutRules[element.type][element.user_type].maxFee || null);
+      } else if (_configs.cashInOutRules[element.type][element.user_type].minFee > 0) {
+        fee = _configs.cashInOutRules[element.type][element.user_type].minFee;
+      }
 
-    process.stdout.write(element.type + ' : ' + fee + '\n');
-  });
+      commissions.push(fee);
+    });
+  } catch (error) {
+    process.stdout.write('File error!');
+  }
+
+  commissions.forEach(item => process.stdout.write(item + '\n'));
+  return commissions;
 };
 
 var _default = main;
